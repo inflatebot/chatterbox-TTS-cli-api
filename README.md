@@ -18,13 +18,6 @@ Right now, it is designed to be used locally by one user, processing one request
 
 - [ ] Add the ability to have multiple voice cloning sources loaded and selectable by API.
 - [ ] Switch to a more production stable HTTP hosting solution.
-- [ ] 
-
-## SillyTavern usage
-
-SillyTavern Settings
-![Image 1](src/figures/sillytavern-settings.png) 
-Make SillyTavern TTS settings (in the "Extensions" menu at the top) match this screenshot. "Narrate by paragraphs (when not streaming)" is very important to reduce latency.
 
 ---
 
@@ -119,6 +112,17 @@ Simply put:
 - Generate a few samples with your desired clone voice
 - Find one that has the correct accent/sound
 - Use that perfect result as clone input to get consistent long generations
+
+**Random voices**
+If you don't specify a clone source, you must specify `--gender`. You'll get a random voice for each chunk. This is useful to find new voices, and use those as clone sources. However, for normal usage, I don't suggest leaving it on random as the output will be chaotic.
+
+---
+
+## SillyTavern usage
+
+SillyTavern Settings
+![Image 1](src/figures/sillytavern-settings.png) 
+Make SillyTavern TTS settings (in the "Extensions" menu at the top) match this screenshot. "Narrate by paragraphs (when not streaming)" is very important to reduce latency.
 
 ---
 
