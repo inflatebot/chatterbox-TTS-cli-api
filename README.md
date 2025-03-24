@@ -9,7 +9,7 @@ This fork is capable of processing an unlimited amount of text at once. It uses 
 
 Generally, this smooths over all the bumps usually encountered with local text to speech models.
 
-These improvements allow spark text to speech to be used as a seamless drop in replacement for OpenAI. This means it will work with programs like [SillyTavern](https://github.com/SillyTavern/SillyTavern) and others. It can be easily used to read stories, roleplay, chat, and so on.
+These improvements allow Spark-TTS to be used as a seamless drop in replacement for OpenAI. This means it will work with programs like [SillyTavern](https://github.com/SillyTavern/SillyTavern) and others. It can be easily used to read stories, roleplay, chat, and so on.
 
 It takes about 8.5 GB vram, small enough to fit and run at about 2x realtime on an RTX 3060. Anything larger will have an easy time running this model at much faster than real time.
 
