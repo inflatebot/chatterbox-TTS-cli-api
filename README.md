@@ -1,4 +1,7 @@
 # Spark-TTS-cli-api
+(Try listening to this part; this is `male1.wav`!)
+
+[readme1.webm](https://github.com/user-attachments/assets/29ec16d9-917f-4254-8aaf-77686f2234ed)
 
 This is a humanized fork of [Spark-TTS](https://github.com/SparkAudio/Spark-TTS) that adds an OpenAI compatible text to speech API. This means you can actually use the amazing capability of Spark-TTS in real programs, instead of just a tech demo.
 
@@ -122,6 +125,119 @@ Several working (and consistent) voices are provided in `voice_samples`. To swit
 - male3.wav: surprised, best for short bursts
 - male4.wav: deep, rich, noir, serious
 
+---
+
+<table>
+<tr>
+<td align="center">
+    
+**Female 1**
+</td>
+<td align="center">
+    
+**Female 2**
+</td>
+</tr>
+
+<tr>
+<td align="center">
+
+[female1.webm](https://github.com/user-attachments/assets/f859e295-a290-49be-8c69-f793bf69e3e0)
+
+</td>
+<td align="center">
+    
+[female2.webm](https://github.com/user-attachments/assets/77488785-5d48-477b-a2d4-33db4abe95fd)
+
+</td>
+</tr>
+</table>
+
+---
+
+<table>
+<tr>
+<td align="center">
+    
+**Male 1**
+</td>
+<td align="center">
+    
+**Male 2**
+</td>
+</tr>
+
+<tr>
+<td align="center">
+
+[female3.webm](https://github.com/user-attachments/assets/d84cb42e-6a1c-49de-a397-606e0fafbd82)
+
+</td>
+<td align="center">
+    
+[female4.webm](https://github.com/user-attachments/assets/1c931e30-8669-4f55-addd-e21ab94687e5)
+
+</td>
+</tr>
+</table>
+
+---
+
+<table>
+<tr>
+<td align="center">
+    
+**Male 3**
+</td>
+<td align="center">
+    
+**Male 4**
+</td>
+</tr>
+
+<tr>
+<td align="center">
+
+[male1.webm](https://github.com/user-attachments/assets/c29ba86c-9394-4b28-bcf6-1b24c02dbf02)
+
+</td>
+<td align="center">
+    
+[male2.webm](https://github.com/user-attachments/assets/d79030ec-ffdc-437f-8333-0b6010e6d374)
+
+</td>
+</tr>
+</table>
+
+---
+
+<table>
+<tr>
+<td align="center">
+    
+**Female 3**
+</td>
+<td align="center">
+    
+**Female 4**
+</td>
+</tr>
+
+<tr>
+<td align="center">
+
+[male3.webm](https://github.com/user-attachments/assets/3bc720d6-286e-4904-8d57-fdea3055c288)
+
+</td>
+<td align="center">
+    
+[male4.webm](https://github.com/user-attachments/assets/da9ff132-3508-46c0-ba4c-1c0658a0624d)
+
+</td>
+</tr>
+</table>
+
+---
 
 **Voice cloning**
 
