@@ -15,8 +15,6 @@ It takes about 8.5 GB vram, small enough to fit and run at about 2x realtime on 
 
 This was built off the work of the original model authors, and especially the foundational work of [@AcTePuKc's script](https://github.com/SparkAudio/Spark-TTS/issues/10). This would not have been possible without [@AcTePuKc](https://github.com/AcTePuKc)'s inference script.
 
-This project is fully functional, but not feature complete. I plan to add the ability to choose custom voices at inference time with the API.
-
 Right now, it is designed to be used locally by one user, processing one request at a time. Multi-user (concurrent requests) generation works, but it is not as stable as it could be.
 
 The program is a work in progress, but right now, pretty great!
@@ -24,7 +22,11 @@ The program is a work in progress, but right now, pretty great!
 ## To-Do List
 
 - [ ] Add the ability to have multiple voice cloning sources loaded and selectable by API.
-- [ ] Switch to a more production stable HTTP hosting solution.
+- [ ] Switch to a more production stable HTTP API hosting solution.
+- [ ] Always split segments by paragraph.
+- [ ] Add more diverse voice presets.
+- [ ] Improve logic to reduce or eliminate entirely bad segments passed to the API when using unfamiliar voices.
+- [ ] Reduce VRAM usage by using Spark-TTS-Fast.
 
 ---
 
@@ -110,6 +112,8 @@ python ./cli/tts_cli.py --text_file "[path to your .txt file]" --prompt_audio "v
 ```
 
 This will save the output to `examples/results`
+
+Since there is no streaming version yet, it will need to generate the entire output before sending the result over the API. With SillyTavern, this isn't as much of a problem since requests can be sent a paragraph at a time.
 
 **Switching the voice**
 
@@ -259,10 +263,17 @@ If you don't specify a clone source, you must specify `--gender`. You'll get a r
 
 SillyTavern Settings
 ![Image 1](src/figures/sillytavern-settings.png) 
-Make SillyTavern TTS settings (in the "Extensions" menu at the top) match this screenshot. "Narrate by paragraphs (when not streaming)" is very important to reduce latency.
+Change SillyTavern TTS settings (in the "Extensions" menu at the top) match this screenshot. "Narrate by paragraphs (when not streaming)" is very important to reduce latency and increase quality.
 
 ---
 
+## Known issues
+
+- Some words (such as those ending in `'` like `beggin'`) have broken pronunciation. There may be a way to expand contractions like those so the model will read them properly.
+- Names that follow a quote without a space (like `"Ulth`) will sometimes have broken pronunciation.
+- Clone voices can be unstable across many segments if unfamiliar to the model. (Switching from a US English to UK English interpretation if it can't decide).
+
+---
 ## Original Readme (partial)
 
 ### Overview
