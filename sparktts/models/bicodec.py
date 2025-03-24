@@ -73,7 +73,7 @@ class BiCodec(nn.Module):
 
         Args:
             model_dir (Path): Path to the model directory containing checkpoint and config.
-        
+
         Returns:
             BiCodec: The initialized BiCodec model.
         """
@@ -100,10 +100,18 @@ class BiCodec(nn.Module):
         state_dict = load_file(ckpt_path)
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
 
-        for key in missing_keys:
-            print(f"Missing tensor: {key}")
-        for key in unexpected_keys:
-            print(f"Unexpected tensor: {key}")
+        # Show filtered + cleaner warning instead of spamming per tensor
+        known_safe_missing = [
+            "mel_transformer.spectrogram.window",
+            "mel_transformer.mel_scale.fb"
+        ]
+        important_missing = [k for k in missing_keys if k not in known_safe_missing]
+
+        if important_missing:
+            print(f"Warning: Important model tensors missing: {important_missing}")
+        elif missing_keys:
+            print("Note: Some known model tensors (like mel_transformer) are missing and will be auto-regenerated.")
+
 
         model.eval()
         model.remove_weight_norm()
@@ -116,7 +124,7 @@ class BiCodec(nn.Module):
 
         Args:
             batch (dict): A dictionary containing features, reference waveform, and target waveform.
-        
+
         Returns:
             dict: A dictionary containing the reconstruction, features, and other metrics.
         """
@@ -211,14 +219,18 @@ class BiCodec(nn.Module):
         )
 
     def remove_weight_norm(self):
-        """Removes weight normalization from all layers."""
+        """Removes weight normalization from all layers using updated PyTorch API."""
+        from torch.nn.utils.parametrizations import weight_norm
         def _remove_weight_norm(m):
             try:
                 torch.nn.utils.remove_weight_norm(m)
             except ValueError:
-                pass  # The module didn't have weight norm
-
+                try:
+                    weight_norm.remove(m)
+                except Exception:
+                    pass  # Already removed or not applicable
         self.apply(_remove_weight_norm)
+
 
 
 # Test the model

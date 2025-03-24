@@ -1,37 +1,128 @@
-<div align="center">
-    <h1>
-    Spark-TTS
-    </h1>
-    <p>
-    Official PyTorch code for inference of <br>
-    <b><em>Spark-TTS: An Efficient LLM-Based Text-to-Speech Model with Single-Stream Decoupled Speech Tokens</em></b>
-    </p>
-    <p>
-    <img src="src/logo/SparkTTS.jpg" alt="Spark-TTS Logo" style="width: 200px; height: 200px;">
-    </p>
-        <p>
-        <img src="src/logo/HKUST.jpg" alt="Institution 1" style="width: 200px; height: 60px;">
-        <img src="src/logo/mobvoi.jpg" alt="Institution 2" style="width: 200px; height: 60px;">
-        <img src="src/logo/SJU.jpg" alt="Institution 3" style="width: 200px; height: 60px;">
-    </p>
-    <p>
-        <img src="src/logo/NTU.jpg" alt="Institution 4" style="width: 200px; height: 60px;">
-        <img src="src/logo/NPU.jpg" alt="Institution 5" style="width: 200px; height: 60px;">
-        <img src="src/logo/SparkAudio2.jpg" alt="Institution 6" style="width: 200px; height: 60px;">
-    </p>
-    <p>
-    </p>
-    <a href="https://arxiv.org/pdf/2503.01710"><img src="https://img.shields.io/badge/Paper-ArXiv-red" alt="paper"></a>
-    <a href="https://sparkaudio.github.io/spark-tts/"><img src="https://img.shields.io/badge/Demo-Page-lightgrey" alt="version"></a>
-    <a href="https://huggingface.co/SparkAudio/Spark-TTS-0.5B"><img src="https://img.shields.io/badge/Hugging%20Face-Model%20Page-yellow" alt="Hugging Face"></a>
-    <a href="https://github.com/SparkAudio/Spark-TTS"><img src="https://img.shields.io/badge/Platform-linux-lightgrey" alt="version"></a>
-    <a href="https://github.com/SparkAudio/Spark-TTS"><img src="https://img.shields.io/badge/Python-3.12+-orange" alt="version"></a>
-    <a href="https://github.com/SparkAudio/Spark-TTS"><img src="https://img.shields.io/badge/PyTorch-2.5+-brightgreen" alt="python"></a>
-    <a href="https://github.com/SparkAudio/Spark-TTS"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="mit"></a>
-</div>
+# Spark-TTS-cli-api
 
+This is a fork of [Spark-TTS](https://github.com/SparkAudio/Spark-TTS) that adds an OpenAI compatible text to speech API.
 
-## Spark-TTS 🔥
+This fork is capable of processing an unlimited amount of text at once, due to intelligent semantic text splitting to overcome the limitations of the original repo. It will trim out excessive silence, and retry failed segments. It has quality of life improvements that make it suitable as a hands-off TTS provider.
+
+This allows Spark-TTS to be used as a seamless text to speech provider anywhere OpenAI APIs are used. This will work with programs like SillyTavern.
+
+It takes about 8.5 GB vram, small enough to fit and run at about 2x realtime on an RTX 3060.
+
+This was built off the work of the original model authors, and especially the foundational work of [@AcTePuKc's script](https://github.com/SparkAudio/Spark-TTS/issues/10). This would not have been possible without [@AcTePuKc](https://github.com/AcTePuKc)'s inference script.
+
+This project is fully functional, but not feature complete. I plan to add the ability to choose custom voices at inference time with the API.
+
+Right now, it is designed to be used locally by one user, processing one request at a time. Multi-user (concurrent requests) generation works, but it is not as stable as it could be.
+
+## To-Do List
+
+- [ ] Add the ability to have multiple voice cloning sources loaded and selectable by API.
+- [ ] Switch to a more production stable HTTP hosting solution.
+- [ ] 
+
+## SillyTavern usage
+
+SillyTavern Settings
+![Image 1](src/figures/sillytavern-settings.png) 
+Make SillyTavern TTS settings (in the "Extensions" menu at the top) match this screenshot. "Narrate by paragraphs (when not streaming)" is very important to reduce latency.
+
+---
+
+## Install
+**Clone and Install**
+  
+If you're on Windows, please refer to the [Windows Installation Guide](https://github.com/SparkAudio/Spark-TTS/issues/5).  
+*(Thanks to [@AcTePuKc](https://github.com/AcTePuKc) for the detailed Windows instructions!)*
+
+Linux install:
+
+Clone the repo
+``` sh
+git clone https://github.com/dogarrowtype/Spark-TTS-cli-api
+cd Spark-TTS
+```
+
+- Needs python3.11 or python3.12
+
+Install with conda or pip:
+
+Conda install method:
+- Install Conda: please see https://docs.conda.io/en/latest/miniconda.html
+- Create Conda env:
+``` sh
+conda create -n sparktts -y python=3.12
+conda activate sparktts
+pip install -r requirements.txt
+# If you are in mainland China, you can set the mirror as follows:
+#pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
+```
+
+Pip install method:
+``` sh
+python3 -m venv ./venv
+source ./venv/bin/activate
+pip install -r requirements.txt
+# If you are in mainland China, you can set the mirror as follows:
+#pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
+```
+
+**Model Download**
+
+Download via python and huggingface_hub:
+```python
+from huggingface_hub import snapshot_download
+
+snapshot_download("SparkAudio/Spark-TTS-0.5B", local_dir="pretrained_models/Spark-TTS-0.5B")
+```
+
+Or download via git clone:
+```sh
+mkdir -p pretrained_models
+
+# Make sure you have git-lfs installed (https://git-lfs.com)
+git lfs install
+
+git clone https://huggingface.co/SparkAudio/Spark-TTS-0.5B pretrained_models/Spark-TTS-0.5B
+```
+
+**Basic Usage**
+
+To start the server on port 9991:
+``` sh
+python ./tts_server.py --model_dir "pretrained_models/Spark-TTS-0.5B/" --prompt_audio "voice_samples/female2.wav" --port 9991
+```
+
+Alternatively, you can run a command line interface that will read text input：
+
+``` sh
+python ./cli/tts_cli.py --text "Hello, nice to meet you." --prompt_audio "voice_samples/female2.wav"
+```
+
+Or have it **read text from a file**:
+``` sh
+python ./cli/tts_cli.py --text_file "[path to your .txt file]" --prompt_audio "voice_samples/female2.wav"
+```
+
+This will save the output to `examples/results`
+
+**Switching the voice**
+
+Several working (and consistent) voices are provided in `voice_samples`. To switch to another voice, simply change out `female2.wav` for another voice.
+
+**Voice cloning**
+
+To clone another voice, provide a 5 to 20 second voice clip, and hope for the best.
+
+Cloned voices seem to work better when using a second generation clone. Meaning, clone a voice, try generating a few different times, then use the result you like as a clone for future generations.
+
+Simply put:
+- Generate a few samples with your desired clone voice
+- Find one that has the correct accent/sound
+- Use that perfect result as clone input to get consistent long generations
+
+---
+
+## Original Readme (partial)
 
 ### Overview
 
@@ -45,286 +136,6 @@ Spark-TTS is an advanced text-to-speech system that uses the power of large lang
 - **Controllable Speech Generation**: Supports creating virtual speakers by adjusting parameters such as gender, pitch, and speaking rate.
 
 ---
-
-<table align="center">
-  <tr>
-    <td align="center"><b>Inference Overview of Voice Cloning</b><br><img src="src/figures/infer_voice_cloning.png" width="80%" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Inference Overview of Controlled Generation</b><br><img src="src/figures/infer_control.png" width="80%" /></td>
-  </tr>
-</table>
-
-
-## 🚀 News
-
-- **[2025-03-04]** Our paper on this project has been published! You can read it here: [Spark-TTS](https://arxiv.org/pdf/2503.01710). 
-
-- **[2025-03-12]** Nvidia Triton Inference Serving is now supported. See the Runtime section below for more details.
-
-
-## Install
-**Clone and Install**
-
-  Here are instructions for installing on Linux. If you're on Windows, please refer to the [Windows Installation Guide](https://github.com/SparkAudio/Spark-TTS/issues/5).  
-*(Thanks to [@AcTePuKc](https://github.com/AcTePuKc) for the detailed Windows instructions!)*
-
-
-- Clone the repo
-``` sh
-git clone https://github.com/SparkAudio/Spark-TTS.git
-cd Spark-TTS
-```
-
-- Install Conda: please see https://docs.conda.io/en/latest/miniconda.html
-- Create Conda env:
-
-``` sh
-conda create -n sparktts -y python=3.12
-conda activate sparktts
-pip install -r requirements.txt
-# If you are in mainland China, you can set the mirror as follows:
-pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
-```
-
-**Model Download**
-
-Download via python:
-```python
-from huggingface_hub import snapshot_download
-
-snapshot_download("SparkAudio/Spark-TTS-0.5B", local_dir="pretrained_models/Spark-TTS-0.5B")
-```
-
-Download via git clone:
-```sh
-mkdir -p pretrained_models
-
-# Make sure you have git-lfs installed (https://git-lfs.com)
-git lfs install
-
-git clone https://huggingface.co/SparkAudio/Spark-TTS-0.5B pretrained_models/Spark-TTS-0.5B
-```
-
-**Basic Usage**
-
-You can simply run the demo with the following commands:
-``` sh
-cd example
-bash infer.sh
-```
-
-Alternatively, you can directly execute the following command in the command line to perform inference：
-
-``` sh
-python -m cli.inference \
-    --text "text to synthesis." \
-    --device 0 \
-    --save_dir "path/to/save/audio" \
-    --model_dir pretrained_models/Spark-TTS-0.5B \
-    --prompt_text "transcript of the prompt audio" \
-    --prompt_speech_path "path/to/prompt_audio"
-```
-
-**Web UI Usage**
-
-You can start the UI interface by running `python webui.py --device 0`, which allows you to perform Voice Cloning and Voice Creation. Voice Cloning supports uploading reference audio or directly recording the audio.
-
-
-| **Voice Cloning** | **Voice Creation** |
-|:-------------------:|:-------------------:|
-| ![Image 1](src/figures/gradio_TTS.png) | ![Image 2](src/figures/gradio_control.png) |
-
-
-**Optional Methods**
-
-For additional CLI and Web UI methods, including alternative implementations and extended functionalities, you can refer to:
-
-- [CLI and UI by AcTePuKc](https://github.com/SparkAudio/Spark-TTS/issues/10)
-
-
-## Runtime
-
-**Nvidia Triton Inference Serving**
-
-We now provide a reference for deploying Spark-TTS with Nvidia Triton and TensorRT-LLM. The table below presents benchmark results on a single L20 GPU, using 26 different prompt_audio/target_text pairs (totalling 169 seconds of audio):
-
-| Model | Note   | Concurrency | Avg Latency     | RTF | 
-|-------|-----------|-----------------------|---------|--|
-| Spark-TTS-0.5B | [Code Commit](https://github.com/SparkAudio/Spark-TTS/tree/4d769ff782a868524f29e0be851ca64f8b22ebf1/runtime/triton_trtllm) | 1                   | 876.24 ms | 0.1362|
-| Spark-TTS-0.5B | [Code Commit](https://github.com/SparkAudio/Spark-TTS/tree/4d769ff782a868524f29e0be851ca64f8b22ebf1/runtime/triton_trtllm) | 2                   | 920.97 ms | 0.0737|
-| Spark-TTS-0.5B | [Code Commit](https://github.com/SparkAudio/Spark-TTS/tree/4d769ff782a868524f29e0be851ca64f8b22ebf1/runtime/triton_trtllm) | 4                   | 1611.51 ms | 0.0704|
-
-
-Please see the detailed instructions in [runtime/triton_trtllm/README.md](runtime/triton_trtllm/README.md ) for more information.
-
-
-## **Demos**
-
-Here are some demos generated by Spark-TTS using zero-shot voice cloning. For more demos, visit our [demo page](https://sparkaudio.github.io/spark-tts/).
-
----
-
-<table>
-<tr>
-<td align="center">
-    
-**Donald Trump**
-</td>
-<td align="center">
-    
-**Zhongli (Genshin Impact)**
-</td>
-</tr>
-
-<tr>
-<td align="center">
-
-[Donald Trump](https://github.com/user-attachments/assets/fb225780-d9fe-44b2-9b2e-54390cb3d8fd)
-
-</td>
-<td align="center">
-    
-[Zhongli](https://github.com/user-attachments/assets/80eeb9c7-0443-4758-a1ce-55ac59e64bd6)
-
-</td>
-</tr>
-</table>
-
----
-
-<table>
-
-<tr>
-<td align="center">
-    
-**陈鲁豫 Chen Luyu**
-</td>
-<td align="center">
-    
-**杨澜 Yang Lan**
-</td>
-</tr>
-
-<tr>
-<td align="center">
-    
-[陈鲁豫Chen_Luyu.webm](https://github.com/user-attachments/assets/5c6585ae-830d-47b1-992d-ee3691f48cf4)
-</td>
-<td align="center">
-    
-[Yang_Lan.webm](https://github.com/user-attachments/assets/2fb3d00c-abc3-410e-932f-46ba204fb1d7)
-</td>
-</tr>
-</table>
-
----
-
-
-<table>
-<tr>
-<td align="center">
-    
-**余承东 Richard Yu**
-</td>
-<td align="center">
-    
-**马云 Jack Ma**
-</td>
-</tr>
-
-<tr>
-<td align="center">
-
-[Yu_Chengdong.webm](https://github.com/user-attachments/assets/78feca02-84bb-4d3a-a770-0cfd02f1a8da)
-
-</td>
-<td align="center">
-    
-[Ma_Yun.webm](https://github.com/user-attachments/assets/2d54e2eb-cec4-4c2f-8c84-8fe587da321b)
-
-</td>
-</tr>
-</table>
-
----
-
-
-<table>
-<tr>
-<td align="center">
-    
-**刘德华 Andy Lau**
-</td>
-<td align="center">
-
-**徐志胜 Xu Zhisheng**
-</td>
-</tr>
-
-<tr>
-<td align="center">
-
-[Liu_Dehua.webm](https://github.com/user-attachments/assets/195b5e97-1fee-4955-b954-6d10fa04f1d7)
-
-</td>
-<td align="center">
-    
-[Xu_Zhisheng.webm](https://github.com/user-attachments/assets/dd812af9-76bd-4e26-9988-9cdb9ccbb87b)
-
-</td>
-</tr>
-</table>
-
-
----
-
-<table>
-<tr>
-<td align="center">
-    
-**哪吒 Nezha**
-</td>
-<td align="center">
-    
-**李靖 Li Jing**
-</td>
-</tr>
-
-<tr>
-<td align="center">
-
-[Ne_Zha.webm](https://github.com/user-attachments/assets/8c608037-a17a-46d4-8588-4db34b49ed1d)
-</td>
-<td align="center">
-
-[Li_Jing.webm](https://github.com/user-attachments/assets/aa8ba091-097c-4156-b4e3-6445da5ea101)
-
-</td>
-</tr>
-</table>
-
-
-## To-Do List
-
-- [x] Release the Spark-TTS paper.
-- [ ] Release the training code.
-- [ ] Release the training dataset, VoxBox.
-
-
-## Citation
-
-```
-@misc{wang2025sparktts,
-      title={Spark-TTS: An Efficient LLM-Based Text-to-Speech Model with Single-Stream Decoupled Speech Tokens}, 
-      author={Xinsheng Wang and Mingqi Jiang and Ziyang Ma and Ziyu Zhang and Songxiang Liu and Linqin Li and Zheng Liang and Qixi Zheng and Rui Wang and Xiaoqin Feng and Weizhen Bian and Zhen Ye and Sitong Cheng and Ruibin Yuan and Zhixian Zhao and Xinfa Zhu and Jiahao Pan and Liumeng Xue and Pengcheng Zhu and Yunlin Chen and Zhifei Li and Xie Chen and Lei Xie and Yike Guo and Wei Xue},
-      year={2025},
-      eprint={2503.01710},
-      archivePrefix={arXiv},
-      primaryClass={cs.SD},
-      url={https://arxiv.org/abs/2503.01710}, 
-}
-```
 
 
 ## ⚠️ Usage Disclaimer

@@ -13,15 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+import os
 import re
 import torch
+import numpy as np
 from typing import Tuple
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from sparktts.utils.file import load_config
 from sparktts.models.audio_tokenizer import BiCodecTokenizer
 from sparktts.utils.token_parser import LEVELS_MAP, GENDER_MAP, TASK_TOKEN_MAP
+from sparktts.utils.token_parser import TokenParser
 
 
 class SparkTTS:
@@ -42,6 +47,12 @@ class SparkTTS:
         self.configs = load_config(f"{model_dir}/config.yaml")
         self.sample_rate = self.configs["sample_rate"]
         self._initialize_inference()
+
+        # Device Info Logging
+        if self.device.type == "cuda":
+            print(f"CUDA Device in use: {torch.cuda.get_device_name(self.device.index if self.device.index is not None else 0)}")
+        else:
+            print("CPU Mode activated (fallback) – slower generation expected.")
 
     def _initialize_inference(self):
         """Initializes the tokenizer, model, and audio tokenizer for inference."""
@@ -91,6 +102,7 @@ class SparkTTS:
                 "<|end_global_token|>",
                 "<|start_semantic_token|>",
                 semantic_tokens,
+               "<|end_semantic_token|>",
             ]
         else:
             inputs = [
@@ -113,6 +125,7 @@ class SparkTTS:
         pitch: str,
         speed: str,
         text: str,
+        emotion: str = None  # ← New
     ):
         """
         Process input for voice creation.
@@ -122,13 +135,20 @@ class SparkTTS:
             pitch (str): very_low | low | moderate | high | very_high
             speed (str): very_low | low | moderate | high | very_high
             text (str): The text input to be converted to speech.
+            emotion (str, optional): Emotion label (e.g., HAPPY, SAD, ANGRY, etc.)
 
         Return:
             str: Input prompt
         """
-        assert gender in GENDER_MAP.keys()
-        assert pitch in LEVELS_MAP.keys()
-        assert speed in LEVELS_MAP.keys()
+        if speed is None:
+            speed = "high"  # default fallback
+        if pitch is None:
+            pitch = "moderate"  # optional: set default pitch too
+
+        assert gender in GENDER_MAP
+        assert pitch in LEVELS_MAP
+        assert speed in LEVELS_MAP
+
 
         gender_id = GENDER_MAP[gender]
         pitch_level_id = LEVELS_MAP[pitch]
@@ -138,9 +158,13 @@ class SparkTTS:
         speed_label_tokens = f"<|speed_label_{speed_level_id}|>"
         gender_tokens = f"<|gender_{gender_id}|>"
 
-        attribte_tokens = "".join(
-            [gender_tokens, pitch_label_tokens, speed_label_tokens]
-        )
+        # Include emotion token if provided
+        attribte_tokens = [gender_tokens, pitch_label_tokens, speed_label_tokens]
+        if emotion:
+            from sparktts.utils.token_parser import TokenParser
+            attribte_tokens.append(TokenParser.emotion(emotion))
+
+        attribte_tokens = "".join(attribte_tokens)
 
         control_tts_inputs = [
             TASK_TOKEN_MAP["controllable_tts"],
@@ -154,6 +178,7 @@ class SparkTTS:
 
         return "".join(control_tts_inputs)
 
+
     @torch.no_grad()
     def inference(
         self,
@@ -163,12 +188,14 @@ class SparkTTS:
         gender: str = None,
         pitch: str = None,
         speed: str = None,
+        seed: int = None,  # ← ADDED: Deterministic voice control
+        emotion: str = None,  # ← ADDED: Emotion conditioning
         temperature: float = 0.8,
         top_k: float = 50,
         top_p: float = 0.95,
     ) -> torch.Tensor:
         """
-        Performs inference to generate speech from text, incorporating prompt audio and/or text.
+        Performs inference to generate speech from text, incorporating prompt audio and/or control attributes.
 
         Args:
             text (str): The text input to be converted to speech.
@@ -177,21 +204,33 @@ class SparkTTS:
             gender (str): female | male.
             pitch (str): very_low | low | moderate | high | very_high
             speed (str): very_low | low | moderate | high | very_high
-            temperature (float, optional): Sampling temperature for controlling randomness. Default is 0.8.
-            top_k (float, optional): Top-k sampling parameter. Default is 50.
-            top_p (float, optional): Top-p (nucleus) sampling parameter. Default is 0.95.
+            emotion (str): Emotion label (e.g., HAPPY, SAD, ANGRY, etc.)
+            temperature (float): Sampling temperature for randomness control.
+            top_k (float): Top-k sampling.
+            top_p (float): Top-p (nucleus) sampling.
 
         Returns:
             torch.Tensor: Generated waveform as a tensor.
         """
-        if gender is not None:
-            prompt = self.process_prompt_control(gender, pitch, speed, text)
 
+        # Build prompt using control tokens if gender is set
+        if gender is not None:
+            prompt = self.process_prompt_control(gender, pitch, speed, text, emotion=emotion)  # ← ADDED emotion
         else:
-            prompt, global_token_ids = self.process_prompt(
-                text, prompt_speech_path, prompt_text
-            )
+            prompt, global_token_ids = self.process_prompt(text, prompt_speech_path, prompt_text)
+
         model_inputs = self.tokenizer([prompt], return_tensors="pt").to(self.device)
+
+        # Seed setting block (New Code) ← ADDED
+        if seed is not None:
+            torch.manual_seed(seed)
+            np.random.seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
+
+        # Optional fix for pad_token_id warning ← ADDED
+        if self.tokenizer.pad_token_id is None:
+            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id or 0
 
         # Generate speech using the model
         generated_ids = self.model.generate(
@@ -201,24 +240,26 @@ class SparkTTS:
             top_k=top_k,
             top_p=top_p,
             temperature=temperature,
+            pad_token_id=self.tokenizer.pad_token_id  # ← ADDED Fix 3
         )
 
-        # Trim the output tokens to remove the input tokens
+        # Trim generated output (remove prompt tokens)
         generated_ids = [
-            output_ids[len(input_ids) :]
+            output_ids[len(input_ids):]
             for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
         ]
 
-        # Decode the generated tokens into text
+        # Decode tokens to text
         predicts = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
-        # Extract semantic token IDs from the generated text
+        # Extract semantic token IDs
         pred_semantic_ids = (
             torch.tensor([int(token) for token in re.findall(r"bicodec_semantic_(\d+)", predicts)])
             .long()
             .unsqueeze(0)
         )
 
+        # Extract global token IDs if control prompt was used
         if gender is not None:
             global_token_ids = (
                 torch.tensor([int(token) for token in re.findall(r"bicodec_global_(\d+)", predicts)])
@@ -227,7 +268,7 @@ class SparkTTS:
                 .unsqueeze(0)
             )
 
-        # Convert semantic tokens back to waveform
+        # Detokenize to waveform
         wav = self.audio_tokenizer.detokenize(
             global_token_ids.to(self.device).squeeze(0),
             pred_semantic_ids.to(self.device),
