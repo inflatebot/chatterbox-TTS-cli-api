@@ -1,18 +1,22 @@
 # Spark-TTS-cli-api
 
-This is a fork of [Spark-TTS](https://github.com/SparkAudio/Spark-TTS) that adds an OpenAI compatible text to speech API.
+This is a humanized fork of [Spark-TTS](https://github.com/SparkAudio/Spark-TTS) that adds an OpenAI compatible text to speech API. This means you can actually use the amazing capability of Spark-TTS in real programs, instead of just a tech demo.
 
-This fork is capable of processing an unlimited amount of text at once, due to intelligent semantic text splitting to overcome the limitations of the original repo. It will trim out excessive silence, and retry failed segments. It has quality of life improvements that make it suitable as a hands-off TTS provider.
+This fork is capable of processing an unlimited amount of text at once. It uses intelligent semantic text splitting to overcome the limitations of the original repo. It has quality of life improvements that make it suitable as a hands-off TTS provider. It will trim out excessive silence, and retry failed segments.
 
-This allows Spark-TTS to be used as a seamless text to speech provider anywhere OpenAI APIs are used. This will work with programs like SillyTavern.
+Generally, this smooths over all the bumps usually encountered with local text to speech models.
 
-It takes about 8.5 GB vram, small enough to fit and run at about 2x realtime on an RTX 3060.
+These improvements allow spark text to speech to be used as a seamless drop in replacement for OpenAI. This means it will work with programs like [SillyTavern](https://github.com/SillyTavern/SillyTavern) and others. It can be easily used to read stories, roleplay, chat, and so on.
+
+It takes about 8.5 GB vram, small enough to fit and run at about 2x realtime on an RTX 3060. Anything larger will have an easy time running this model at much faster than real time.
 
 This was built off the work of the original model authors, and especially the foundational work of [@AcTePuKc's script](https://github.com/SparkAudio/Spark-TTS/issues/10). This would not have been possible without [@AcTePuKc](https://github.com/AcTePuKc)'s inference script.
 
 This project is fully functional, but not feature complete. I plan to add the ability to choose custom voices at inference time with the API.
 
 Right now, it is designed to be used locally by one user, processing one request at a time. Multi-user (concurrent requests) generation works, but it is not as stable as it could be.
+
+The program is a work in progress, but right now, pretty great!
 
 ## To-Do List
 
@@ -23,7 +27,8 @@ Right now, it is designed to be used locally by one user, processing one request
 
 ## Install
 **Clone and Install**
-  
+
+(Windows instructions not updated for this repo, but close enough.)
 If you're on Windows, please refer to the [Windows Installation Guide](https://github.com/SparkAudio/Spark-TTS/issues/5).  
 *(Thanks to [@AcTePuKc](https://github.com/AcTePuKc) for the detailed Windows instructions!)*
 
@@ -35,7 +40,7 @@ git clone https://github.com/dogarrowtype/Spark-TTS-cli-api
 cd Spark-TTS
 ```
 
-- Needs python3.11 or python3.12
+- Needs `python3.11` or `python3.12`
 
 Install with conda or pip:
 
@@ -61,7 +66,12 @@ pip install -r requirements.txt
 
 **Model Download**
 
-Download via python and huggingface_hub:
+Download via huggingface-cli command:
+```sh
+huggingface-cli download SparkAudio/Spark-TTS-0.5B --local-dir "pretrained_models/Spark-TTS-0.5B"
+```
+
+Download via python code and huggingface_hub (requires huggingface_cli to be installed):
 ```python
 from huggingface_hub import snapshot_download
 
@@ -102,9 +112,20 @@ This will save the output to `examples/results`
 
 Several working (and consistent) voices are provided in `voice_samples`. To switch to another voice, simply change out `female2.wav` for another voice.
 
+**Provided voice descriptions**
+- female1.wav: melancholy, rainy
+- female2.wav: confident, expressive
+- female3.wav: anime VA, cutesy, kinda sad, amazed
+- female4.wav: clean, light, a touch of mystery
+- male1.wav: cute, super expressive, adventurous
+- male2.wav: determined, focused
+- male3.wav: surprised, best for short bursts
+- male4.wav: deep, rich, noir, serious
+
+
 **Voice cloning**
 
-To clone another voice, provide a 5 to 20 second voice clip, and hope for the best.
+To clone another voice, provide a 5 to 20 second voice clip of clear audio, and hope for the best. A single long sentence can work great.
 
 Cloned voices seem to work better when using a second generation clone. Meaning, clone a voice, try generating a few different times, then use the result you like as a clone for future generations.
 
