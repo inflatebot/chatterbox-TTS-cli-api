@@ -159,11 +159,11 @@ Several working (and consistent) voices are provided in `voice_samples`. To swit
 <tr>
 <td align="center">
     
-**Male 1**
+**Female 3**
 </td>
 <td align="center">
     
-**Male 2**
+**Female 4**
 </td>
 </tr>
 
@@ -187,11 +187,11 @@ Several working (and consistent) voices are provided in `voice_samples`. To swit
 <tr>
 <td align="center">
     
-**Male 3**
+**Male 1**
 </td>
 <td align="center">
     
-**Male 4**
+**Male 2**
 </td>
 </tr>
 
@@ -215,11 +215,11 @@ Several working (and consistent) voices are provided in `voice_samples`. To swit
 <tr>
 <td align="center">
     
-**Female 3**
+**Male 3**
 </td>
 <td align="center">
     
-**Female 4**
+**Male 4**
 </td>
 </tr>
 
