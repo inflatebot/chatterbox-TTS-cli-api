@@ -130,6 +130,7 @@ Personally I recommend using `male1.wav` or `female2.wav`. Right now, those voic
 - male2.wav: determined, focused
 - male3.wav: surprised, best for short bursts
 - male4.wav: deep, rich, noir, serious
+- male5.wav: alternate version of male4.wav, expressive, deep, rich, engaging
 
 ---
 
@@ -238,6 +239,35 @@ Personally I recommend using `male1.wav` or `female2.wav`. Right now, those voic
 <td align="center">
     
 [male4.webm](https://github.com/user-attachments/assets/da9ff132-3508-46c0-ba4c-1c0658a0624d)
+
+</td>
+</tr>
+</table>
+
+---
+
+
+<table>
+<tr>
+<td align="center">
+    
+**Male 5**
+</td>
+<td align="center">
+    
+**Male 6 (not yet found)**
+</td>
+</tr>
+
+<tr>
+<td align="center">
+
+[male5.webm](https://github.com/user-attachments/assets/ad830d60-a493-4736-a7da-49480c3d0190)
+
+</td>
+<td align="center">
+
+Not yet found.
 
 </td>
 </tr>
