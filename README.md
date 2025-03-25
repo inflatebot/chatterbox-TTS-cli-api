@@ -119,6 +119,8 @@ Since there is no streaming version yet, it will need to generate the entire out
 
 Several working (and consistent) voices are provided in `voice_samples`. To switch to another voice, simply change out `female2.wav` for another voice.
 
+Personally I recommend using `male1.wav` or `female2.wav`. Right now, those voices are hyper-consistent and the most fun to listen to (subjectively).
+
 **Provided voice descriptions**
 - female1.wav: melancholy, rainy
 - female2.wav: confident, expressive
