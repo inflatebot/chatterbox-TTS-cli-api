@@ -7,6 +7,7 @@ import logging
 from datetime import datetime
 import time
 import librosa
+import re
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -100,6 +101,15 @@ def generate_tts_audio(
     os.makedirs(save_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-3]
     save_path = os.path.join(save_dir, f"{timestamp}.wav")
+
+    # Standardize quotes to basic ASCII double quotes
+    text = re.sub(r'[""„‟«»❝❞〝〞〟＂“”]', '"', text)  # Convert fancy double quotes
+    text = re.sub(r'[''‚‛‹›❛❜`´’]', "'", text)  # Convert fancy single quotes/apostrophes
+
+    # Handle other common Unicode punctuation
+    text = re.sub(r'[—–]', '-', text)  # Em dash, en dash to hyphen
+    text = re.sub(r'…', '...', text)  # Ellipsis
+    text = re.sub(r'[•‣⁃*]', '', text)  # Bullets to none
 
     logging.info(f"Splitting into segments... Threshold: {segmentation_threshold} characters")
     #segments = [' '.join(words[i:i + segmentation_threshold]) for i in range(0, len(words), segmentation_threshold)]
