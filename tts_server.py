@@ -125,6 +125,18 @@ def generate_tts_audio(
     text = re.sub(r'[–]', '-', text)  # Em dash, en dash to hyphen
     text = re.sub(r'…', '...', text)  # Ellipsis
     text = re.sub(r'[•‣⁃*]', '', text)  # Bullets to none
+
+    if args.allow_allcaps:
+        pass
+    else:
+        # Convert all-caps words to lowercase (model chokes on all caps)
+        def lowercase_all_caps(match):
+            word = match.group(0)
+            if word.isupper() and len(word) > 1:
+                return word.lower()
+            return word
+
+        text = re.sub(r'\b[A-Z][A-Z]+\b', lowercase_all_caps, text)
     
     logging.info(f"Splitting into segments... Threshold: {segmentation_threshold} characters")
     splitter = TextSplitter(segmentation_threshold)
@@ -338,7 +350,8 @@ if __name__ == '__main__':
                         default="moderate", help='Speed parameter')
     parser.add_argument('--emotion', type=str, choices=list(EMO_MAP.keys()), help='Emotion tag')
     parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--seg_threshold", type=int, default=400)
+    parser.add_argument("--seg_threshold", type=int, default=400, help="Character limit for a single segment of text.")
+    parser.add_argument("--allow_allcaps", action='store_true', help="Allow words that have 2 or more capital letters to stay capital letters. Normally these are filtered out so that the model can pronounce ALLCAPS words correctly. Useful when the text to be read has many acronyms like API or GUI or EDU.")
     
     args = parser.parse_args()
     
