@@ -269,6 +269,13 @@ Change SillyTavern TTS settings (in the "Extensions" menu at the top) match this
 
 ---
 
+## Open-Webui usage
+Open-Webui Settings
+![Image 2](src/figures/open-webui-settings.png) 
+In the Open-Webui admin panel, go to "audio" and set the TTS provider like this. Set "response splitting" to "paragraphs" to reduce latency and increase quality.
+
+---
+
 ## Known issues
 
 - Some words involving `'` (such as those ending in `'` like `beggin'`) have broken pronunciation. There may be a way to expand contractions like those so the model will read them properly.
