@@ -1,5 +1,8 @@
 import sys
 import os
+import shutil
+import subprocess
+import platform
 import torch
 import numpy as np
 import soundfile as sf
@@ -40,6 +43,41 @@ GLOBAL_VOICE_PARAMS = {
 
 app = Flask(__name__)
 CORS(app)
+
+def is_ffmpeg_available():
+    """Check if ffmpeg is available on the system path, works on Windows and Linux."""
+    # Check if we're on Windows
+    is_windows = platform.system().lower() == "windows"
+
+    # On Windows, we should also check for ffmpeg.exe specifically
+    ffmpeg_commands = ['ffmpeg.exe', 'ffmpeg'] if is_windows else ['ffmpeg']
+
+    # Method 1: Using shutil.which (works on both platforms)
+    for cmd in ffmpeg_commands:
+        if shutil.which(cmd) is not None:
+            return True
+
+    # Method 2: Fallback to subprocess
+    for cmd in ffmpeg_commands:
+        try:
+            # On Windows, shell=True might be needed in some environments
+            subprocess.run(
+                [cmd, '-version'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True,
+                timeout=5,
+                shell=is_windows
+            )
+            return True
+        except (subprocess.SubprocessError, FileNotFoundError):
+            continue
+
+    return False
+
+
+ffmpeg_available = is_ffmpeg_available()
+logging.info(f"FFmpeg is {'available' if ffmpeg_available else 'not available'}")
 
 # Your existing generate_tts_audio function
 def generate_tts_audio(
@@ -126,9 +164,7 @@ def generate_tts_audio(
     text = re.sub(r'…', '...', text)  # Ellipsis
     text = re.sub(r'[•‣⁃*]', '', text)  # Bullets to none
 
-    if args.allow_allcaps:
-        pass
-    else:
+    if not args.allow_allcaps:
         # Convert all-caps words to lowercase (model chokes on all caps)
         def lowercase_all_caps(match):
             word = match.group(0)
@@ -282,7 +318,7 @@ def tts():
         )
         
         # Convert to mp3 if needed
-        if response_format == 'mp3':
+        if response_format == 'mp3' and ffmpeg_available:
             output_file = convert_wav_to_mp3(output_file)
             mimetype = "audio/mpeg"
         else:

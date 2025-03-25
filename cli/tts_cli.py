@@ -20,7 +20,6 @@ import random
 # Global cache for reuse
 _cached_model_instance = None
 
-
 def generate_tts_audio(
     text,
     model_dir=None,
@@ -111,9 +110,7 @@ def generate_tts_audio(
     text = re.sub(r'…', '...', text)  # Ellipsis
     text = re.sub(r'[•‣⁃*]', '', text)  # Bullets to none
 
-    if args.allow_allcaps:
-        pass
-    else:
+    if not args.allow_allcaps:
         # Convert all-caps words to lowercase (model chokes on all caps)
         def lowercase_all_caps(match):
             word = match.group(0)
