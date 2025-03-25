@@ -398,5 +398,5 @@ if __name__ == '__main__':
             logging.error(f"Error preloading model: {e}")
             sys.exit(1)
             
-    logging.info(f"Starting OpenAI-compatible TTS server on {args.host}:{args.port}")
+    logging.info(f"Starting OpenAI-compatible TTS server on http://{args.host}:{args.port}/v1/audio/speech")
     app.run(host=args.host, port=args.port, debug=False)
