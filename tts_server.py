@@ -122,7 +122,7 @@ def generate_tts_audio(
     text = re.sub(r'[''‚‛‹›❛❜`´’]', "'", text)  # Convert fancy single quotes/apostrophes
 
     # Handle other common Unicode punctuation
-    text = re.sub(r'[—–]', '-', text)  # Em dash, en dash to hyphen
+    text = re.sub(r'[–]', '-', text)  # Em dash, en dash to hyphen
     text = re.sub(r'…', '...', text)  # Ellipsis
     text = re.sub(r'[•‣⁃*]', '', text)  # Bullets to none
     
