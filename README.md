@@ -1,4 +1,7 @@
 # Spark-TTS-cli-api
+(Try listening to this part; this is `male1.wav`!)
+
+[readme1.webm](https://github.com/user-attachments/assets/29ec16d9-917f-4254-8aaf-77686f2234ed)
 
 This is a humanized fork of [Spark-TTS](https://github.com/SparkAudio/Spark-TTS) that adds an OpenAI compatible text to speech API. This means you can actually use the amazing capability of Spark-TTS in real programs, instead of just a tech demo.
 
@@ -6,13 +9,11 @@ This fork is capable of processing an unlimited amount of text at once. It uses 
 
 Generally, this smooths over all the bumps usually encountered with local text to speech models.
 
-These improvements allow spark text to speech to be used as a seamless drop in replacement for OpenAI. This means it will work with programs like [SillyTavern](https://github.com/SillyTavern/SillyTavern) and others. It can be easily used to read stories, roleplay, chat, and so on.
+These improvements allow Spark-TTS to be used as a seamless drop in replacement for OpenAI. This means it will work with programs like [SillyTavern](https://github.com/SillyTavern/SillyTavern) and others. It can be easily used to read stories, roleplay, chat, and so on.
 
 It takes about 8.5 GB vram, small enough to fit and run at about 2x realtime on an RTX 3060. Anything larger will have an easy time running this model at much faster than real time.
 
 This was built off the work of the original model authors, and especially the foundational work of [@AcTePuKc's script](https://github.com/SparkAudio/Spark-TTS/issues/10). This would not have been possible without [@AcTePuKc](https://github.com/AcTePuKc)'s inference script.
-
-This project is fully functional, but not feature complete. I plan to add the ability to choose custom voices at inference time with the API.
 
 Right now, it is designed to be used locally by one user, processing one request at a time. Multi-user (concurrent requests) generation works, but it is not as stable as it could be.
 
@@ -21,7 +22,11 @@ The program is a work in progress, but right now, pretty great!
 ## To-Do List
 
 - [ ] Add the ability to have multiple voice cloning sources loaded and selectable by API.
-- [ ] Switch to a more production stable HTTP hosting solution.
+- [ ] Switch to a more production stable HTTP API hosting solution.
+- [ ] Always split segments by paragraph.
+- [ ] Add more diverse voice presets.
+- [ ] Improve logic to reduce or eliminate entirely bad segments passed to the API when using unfamiliar voices.
+- [ ] Reduce VRAM usage by using Spark-TTS-Fast.
 
 ---
 
@@ -108,9 +113,13 @@ python ./cli/tts_cli.py --text_file "[path to your .txt file]" --prompt_audio "v
 
 This will save the output to `examples/results`
 
+Since there is no streaming version yet, it will need to generate the entire output before sending the result over the API. With SillyTavern, this isn't as much of a problem since requests can be sent a paragraph at a time.
+
 **Switching the voice**
 
 Several working (and consistent) voices are provided in `voice_samples`. To switch to another voice, simply change out `female2.wav` for another voice.
+
+Personally I recommend using `male1.wav` or `female2.wav`. Right now, those voices are hyper-consistent and the most fun to listen to (subjectively).
 
 **Provided voice descriptions**
 - female1.wav: melancholy, rainy
@@ -122,6 +131,119 @@ Several working (and consistent) voices are provided in `voice_samples`. To swit
 - male3.wav: surprised, best for short bursts
 - male4.wav: deep, rich, noir, serious
 
+---
+
+<table>
+<tr>
+<td align="center">
+    
+**Female 1**
+</td>
+<td align="center">
+    
+**Female 2**
+</td>
+</tr>
+
+<tr>
+<td align="center">
+
+[female1.webm](https://github.com/user-attachments/assets/f859e295-a290-49be-8c69-f793bf69e3e0)
+
+</td>
+<td align="center">
+    
+[female2.webm](https://github.com/user-attachments/assets/77488785-5d48-477b-a2d4-33db4abe95fd)
+
+</td>
+</tr>
+</table>
+
+---
+
+<table>
+<tr>
+<td align="center">
+    
+**Female 3**
+</td>
+<td align="center">
+    
+**Female 4**
+</td>
+</tr>
+
+<tr>
+<td align="center">
+
+[female3.webm](https://github.com/user-attachments/assets/d84cb42e-6a1c-49de-a397-606e0fafbd82)
+
+</td>
+<td align="center">
+    
+[female4.webm](https://github.com/user-attachments/assets/1c931e30-8669-4f55-addd-e21ab94687e5)
+
+</td>
+</tr>
+</table>
+
+---
+
+<table>
+<tr>
+<td align="center">
+    
+**Male 1**
+</td>
+<td align="center">
+    
+**Male 2**
+</td>
+</tr>
+
+<tr>
+<td align="center">
+
+[male1.webm](https://github.com/user-attachments/assets/c29ba86c-9394-4b28-bcf6-1b24c02dbf02)
+
+</td>
+<td align="center">
+    
+[male2.webm](https://github.com/user-attachments/assets/d79030ec-ffdc-437f-8333-0b6010e6d374)
+
+</td>
+</tr>
+</table>
+
+---
+
+<table>
+<tr>
+<td align="center">
+    
+**Male 3**
+</td>
+<td align="center">
+    
+**Male 4**
+</td>
+</tr>
+
+<tr>
+<td align="center">
+
+[male3.webm](https://github.com/user-attachments/assets/3bc720d6-286e-4904-8d57-fdea3055c288)
+
+</td>
+<td align="center">
+    
+[male4.webm](https://github.com/user-attachments/assets/da9ff132-3508-46c0-ba4c-1c0658a0624d)
+
+</td>
+</tr>
+</table>
+
+---
 
 **Voice cloning**
 
@@ -143,10 +265,18 @@ If you don't specify a clone source, you must specify `--gender`. You'll get a r
 
 SillyTavern Settings
 ![Image 1](src/figures/sillytavern-settings.png) 
-Make SillyTavern TTS settings (in the "Extensions" menu at the top) match this screenshot. "Narrate by paragraphs (when not streaming)" is very important to reduce latency.
+Change SillyTavern TTS settings (in the "Extensions" menu at the top) match this screenshot. "Narrate by paragraphs (when not streaming)" is very important to reduce latency and increase quality.
 
 ---
 
+## Known issues
+
+- Some words involving `'` (such as those ending in `'` like `beggin'`) have broken pronunciation. There may be a way to expand contractions like those so the model will read them properly.
+- Names that follow a quote without a space (like `"Ulth`) will sometimes have broken pronunciation.
+- Clone voices can be unstable across many segments if unfamiliar to the model. (Switching from a US English to UK English interpretation if it can't decide).
+- (Mostly only an issue with custom clone voices) The segment retry can cause a bit of a traffic jam. If it has to retry a segment on a slow gpu, there may be a break in streaming output with SillyTavern. It *will* eventually continue, but there can be a pause while it tries to catch up. This is especially confusing in SillyTavern since there is no indicator that voice is being generated. It can appear like the request has failed, even though it is still generating.
+
+---
 ## Original Readme (partial)
 
 ### Overview
