@@ -272,7 +272,7 @@ Change SillyTavern TTS settings (in the "Extensions" menu at the top) match this
 ## Open-Webui usage
 Open-Webui Settings
 ![Image 2](src/figures/open-webui-settings.png) 
-In the Open-Webui admin panel, go to "audio" and set the TTS provider like this. Set "response splitting" to "paragraphs" to reduce latency and increase quality.
+In the [Open-Webui](https://github.com/open-webui/open-webui) admin panel, go to "audio" and set the TTS provider to `http://localhost:9991/v1`. Set "response splitting" to "paragraphs" to reduce latency and increase quality.
 
 ---
 
