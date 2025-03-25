@@ -271,9 +271,10 @@ Change SillyTavern TTS settings (in the "Extensions" menu at the top) match this
 
 ## Known issues
 
-- Some words (such as those ending in `'` like `beggin'`) have broken pronunciation. There may be a way to expand contractions like those so the model will read them properly.
+- Some words involving `'` (such as those ending in `'` like `beggin'`) have broken pronunciation. There may be a way to expand contractions like those so the model will read them properly.
 - Names that follow a quote without a space (like `"Ulth`) will sometimes have broken pronunciation.
 - Clone voices can be unstable across many segments if unfamiliar to the model. (Switching from a US English to UK English interpretation if it can't decide).
+- (Mostly only an issue with custom clone voices) The segment retry can cause a bit of a traffic jam. If it has to retry a segment on a slow gpu, there may be a break in streaming output with SillyTavern. It *will* eventually continue, but there can be a pause while it tries to catch up. This is especially confusing in SillyTavern since there is no indicator that voice is being generated. It can appear like the request has failed, even though it is still generating.
 
 ---
 ## Original Readme (partial)
