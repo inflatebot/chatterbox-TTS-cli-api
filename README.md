@@ -321,7 +321,7 @@ Not yet found.
 
 **Voice cloning**
 
-To clone another voice, gather a 5 to 20 second `.wav` voice clip of clear audio of your speaker. A single long sentence can work great. Your clone source file should be in `.wav` format (but others may work).
+To clone another voice, gather a 5 to 20 second `.wav` voice clip of clear audio of your speaker. Background noise/music should absolutely be avoided. A single long sentence can work great. A single instance of your voice speaking continuously is best. Multiple very short (less than 5 second) clips edited together do not seem to work well. Your clone source file should be in `.wav` format (but others may work).
 
 In the above "Basic Usage" commands, switch out `female2.wav` for your new clone voice, and hope for the best. Follow the second generation cloning advice below to get better results.
 
