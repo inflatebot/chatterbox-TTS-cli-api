@@ -156,11 +156,11 @@ def generate_tts_audio(
     save_path = os.path.join(save_dir, f"{timestamp}.wav")
 
     # Standardize quotes to basic ASCII double quotes
-    text = re.sub(r'[""„‟«»❝❞〝〞〟＂“”]', '"', text)  # Convert fancy double quotes
-    text = re.sub(r'[''‚‛‹›❛❜`´’]', "'", text)  # Convert fancy single quotes/apostrophes
+    text = re.sub(r'[""„‟«»❝❞〝〞〟＂“”＂]', '"', text)  # Convert fancy double quotes
+    text = re.sub(r'[''‚‛‹›❛❜`´’‘]', "'", text)  # Convert fancy single quotes/apostrophes
 
     # Handle other common Unicode punctuation
-    text = re.sub(r'[–]', '-', text)  # Em dash, en dash to hyphen
+    text = re.sub(r'[–]', '-', text)  # En dash to hyphen
     text = re.sub(r'…', '...', text)  # Ellipsis
     text = re.sub(r'[•‣⁃*]', '', text)  # Bullets to none
 
