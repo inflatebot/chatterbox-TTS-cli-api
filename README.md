@@ -19,6 +19,10 @@ Right now, it is designed to be used locally by one user, processing one request
 
 The program is a work in progress, but right now, pretty great!
 
+There's two ways to get text to speech:
+- Connect to a program like SillyTavern and have it read what you want on demand.
+- Have it read a .txt file and give you a .wav audio file to listen to or share.
+
 ## To-Do List
 
 - [ ] Add the ability to have multiple voice cloning sources loaded and selectable by API.
@@ -27,17 +31,13 @@ The program is a work in progress, but right now, pretty great!
 - [ ] Add more diverse voice presets.
 - [ ] Improve logic to reduce or eliminate entirely bad segments passed to the API when using unfamiliar voices.
 - [ ] Reduce VRAM usage by using Spark-TTS-Fast.
+- [X] Better handling of apostrophes and quotes (fancy unicode quotes break the model).
 
 ---
 
-## Install
-**Clone and Install**
+# Install
 
-(Windows instructions not updated for this repo, but close enough.)
-If you're on Windows, please refer to the [Windows Installation Guide](https://github.com/SparkAudio/Spark-TTS/issues/5).  
-*(Thanks to [@AcTePuKc](https://github.com/AcTePuKc) for the detailed Windows instructions!)*
-
-Linux install:
+## Linux install:
 
 Clone the repo
 ``` sh
@@ -51,7 +51,6 @@ Install with conda or pip:
 
 Conda install method:
 - Install Conda: please see https://docs.conda.io/en/latest/miniconda.html
-- Create Conda env:
 ``` sh
 conda create -n sparktts -y python=3.12
 conda activate sparktts
@@ -60,9 +59,9 @@ pip install -r requirements.txt
 #pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
 ```
 
-Pip install method:
+Alternative `pip` install method:
 ``` sh
-python3 -m venv ./venv
+python3.12 -m venv ./venv
 source ./venv/bin/activate
 pip install -r requirements.txt
 # If you are in mainland China, you can set the mirror as follows:
@@ -76,32 +75,76 @@ Download via huggingface-cli command:
 huggingface-cli download SparkAudio/Spark-TTS-0.5B --local-dir "pretrained_models/Spark-TTS-0.5B"
 ```
 
-Download via python code and huggingface_hub (requires huggingface_cli to be installed):
-```python
-from huggingface_hub import snapshot_download
+`ffmpeg` is an optional requirement. It's nice to have, but not critical. If you can't get it, don't worry. It just converts the output wav to mp3 for slightly less bandwidth usage.
 
-snapshot_download("SparkAudio/Spark-TTS-0.5B", local_dir="pretrained_models/Spark-TTS-0.5B")
+## Windows install
+
+**Step 1: Get miniconda**
+
+Install [miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install#windows-installation)
+
+**Step 2: Get the files**
+
+You have two options to get the files:
+
+Option 1 (Recommended for Windows): Download ZIP manually
+
+- Click "Code" > "Download ZIP" at the top of the page, then extract it to the same folder you've chosen to work in.
+- You should have a "Spark-TTS-cli-api" folder inside your chosen install folder.
+
+Option 2: Use Git (Optional, allows for easy updates)
+
+- If you prefer using Git, install [Git](https://git-scm.com/downloads).
+- Then open a Command Prompt (cmd) in the folder you would like to install in, and run:
+``` sh
+git clone https://github.com/SparkAudio/Spark-TTS.git
+cd Spark-TTS-cli-api
 ```
 
-Or download via git clone:
-```sh
-mkdir -p pretrained_models
+**Step 3: Create a miniconda environment**
 
-# Make sure you have git-lfs installed (https://git-lfs.com)
-git lfs install
-
-git clone https://huggingface.co/SparkAudio/Spark-TTS-0.5B pretrained_models/Spark-TTS-0.5B
+Open Command Prompt (cmd) in your Spark-TTS-cli-api folder, and run:
+``` sh
+conda create -n sparktts python=3.12 -y
+conda activate sparktts
 ```
+This creates and activates a Python 3.12 environment for Spark-TTS.
+
+**Step 4: Install dependencies**
+
+``` sh
+pip install -r requirements.txt
+pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
+```
+
+**Step 5: Get the model**
+
+Download via huggingface-cli command:
+``` sh
+huggingface-cli download SparkAudio/Spark-TTS-0.5B --local-dir "pretrained_models/Spark-TTS-0.5B"
+```
+
+**Step 6: Ready to start**
+
+You should be good to go. Run the command from "Basic Usage" below that fits your needs.
 
 ---
 
 # Basic Usage
 
-To start the API server on port 9991:
+If you installed using conda/miniconda, remember to activate it first:
 ``` sh
-python ./tts_server.py --model_dir "pretrained_models/Spark-TTS-0.5B/" --prompt_audio "voice_samples/female2.wav" --port 9991
+conda activate sparktts
 ```
 
+## API server
+To start the API server on port 9991:
+``` sh
+python ./tts_server.py --prompt_audio "voice_samples/female2.wav"
+```
+Since there is no streaming version yet, it will need to generate the entire output before sending the result over the API. With SillyTavern, this isn't as much of a problem since requests can be sent a paragraph at a time.
+
+## .TXT file reader
 Alternatively, you can run a command line interface that will read text input：
 
 ``` sh
@@ -113,12 +156,9 @@ Or have it **read text from a file**:
 python ./cli/tts_cli.py --text_file "[path to your .txt file]" --prompt_audio "voice_samples/female2.wav"
 ```
 
-This will save the output to `examples/results`
+This will save the output to the folder `examples/results` inside Spark-TTS-cli-api.
 
-Since there is no streaming version yet, it will need to generate the entire output before sending the result over the API. With SillyTavern, this isn't as much of a problem since requests can be sent a paragraph at a time.
-
-**Switching the voice**
-
+## Switching the voice
 Several working (and consistent) voices are provided in `voice_samples`. To switch to another voice, simply change out `female2.wav` for another voice.
 
 Personally I recommend using `male1.wav` or `female2.wav`. Right now, those voices are hyper-consistent and the most fun to listen to (subjectively).
@@ -279,16 +319,22 @@ Not yet found.
 
 **Voice cloning**
 
-To clone another voice, provide a 5 to 20 second voice clip of clear audio, and hope for the best. A single long sentence can work great.
+To clone another voice, provide a 5 to 20 second `.wav` voice clip of clear audio, and hope for the best. A single long sentence can work great. Your clone source file should be in `.wav` format (but others may work).
 
-Cloned voices seem to work better when using a second generation clone. Meaning, clone a voice, try generating a few different times, then use the result you like as a clone for future generations.
+Cloned voices seem to work better when using a second generation clone. Meaning, clone a voice, try generating a few different times, then use the result you like best as a clone for future generations.
 
 Simply put:
 - Generate a few samples with your desired clone voice
 - Find one that has the correct accent/sound
 - Use that perfect result as clone input to get consistent long generations
 
+I use this phrase to create second generation clone clips. It has a good coverage of emotions and accents:
+```
+In these days of skeptical enlightened civilization one cannot claim to have seen a sea serpent and expect anything but laughter. And this was even more incredible. The ship's commander, within a few hours, even doubted the evidence of his own senses. But from the sailors the tale leaked out. And a whole ship's company cannot be insane, or all similarly drunk at once.
+```
+
 **Random voices**
+
 If you don't specify a clone source, you must specify `--gender`. You'll get a random voice for each chunk. This is useful to find new voices, and use those as clone sources. However, for normal usage, I don't suggest leaving it on random as the output will be chaotic.
 
 ---
@@ -309,11 +355,11 @@ In the [Open-Webui](https://github.com/open-webui/open-webui) admin panel, go to
 ---
 
 ## Known issues
-
-- Some words involving `'` (such as those ending in `'` like `beggin'`) have broken pronunciation. There may be a way to expand contractions like those so the model will read them properly.
-- Names that follow a quote without a space (like `"Ulth`) will sometimes have broken pronunciation.
 - Clone voices can be unstable across many segments if unfamiliar to the model. (Switching from a US English to UK English interpretation if it can't decide).
 - (Mostly only an issue with custom clone voices) The segment retry can cause a bit of a traffic jam. If it has to retry a segment on a slow gpu, there may be a break in streaming output with SillyTavern. It *will* eventually continue, but there can be a pause while it tries to catch up. This is especially confusing in SillyTavern since there is no indicator that voice is being generated. It can appear like the request has failed, even though it is still generating.
+- Segments that go off the rails halfway through and then pick up much later are not deteceted and retried.
+
+Tested with a RTX 3060 12gb GPU on linux with python3.12, and a RTX 4090 GPU on windows with python 3.12. CPU is untested and unsupported.
 
 ---
 ## Original Readme (partial)
