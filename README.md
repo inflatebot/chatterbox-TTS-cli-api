@@ -93,9 +93,11 @@ git lfs install
 git clone https://huggingface.co/SparkAudio/Spark-TTS-0.5B pretrained_models/Spark-TTS-0.5B
 ```
 
-**Basic Usage**
+---
 
-To start the server on port 9991:
+#Basic Usage
+
+To start the API server on port 9991:
 ``` sh
 python ./tts_server.py --model_dir "pretrained_models/Spark-TTS-0.5B/" --prompt_audio "voice_samples/female2.wav" --port 9991
 ```
