@@ -21,7 +21,7 @@ The program is a work in progress, but right now, pretty great!
 
 There's two ways to get text to speech:
 - Connect to a program like SillyTavern and have it read what you want on demand.
-- Have it read a .txt file and give you a .wav audio file to listen to or share.
+- Have it read a `.txt` file and give you a `.wav` audio file to listen to or share.
 
 ## To-Do List
 
@@ -157,6 +157,8 @@ python ./cli/tts_cli.py --text_file "[path to your .txt file]" --prompt_audio "v
 ```
 
 This will save the output to the folder `examples/results` inside Spark-TTS-cli-api.
+
+Try `--help` to see all options.
 
 ## Switching the voice
 Several working (and consistent) voices are provided in `voice_samples`. To switch to another voice, simply change out `female2.wav` for another voice.
@@ -319,7 +321,9 @@ Not yet found.
 
 **Voice cloning**
 
-To clone another voice, provide a 5 to 20 second `.wav` voice clip of clear audio, and hope for the best. A single long sentence can work great. Your clone source file should be in `.wav` format (but others may work).
+To clone another voice, gather a 5 to 20 second `.wav` voice clip of clear audio of your speaker. A single long sentence can work great. Your clone source file should be in `.wav` format (but others may work).
+
+In the above "Basic Usage" commands, switch out `female2.wav` for your new clone voice, and hope for the best. Follow the second generation cloning advice below to get better results.
 
 Cloned voices seem to work better when using a second generation clone. Meaning, clone a voice, try generating a few different times, then use the result you like best as a clone for future generations.
 
