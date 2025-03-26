@@ -77,7 +77,7 @@ huggingface-cli download SparkAudio/Spark-TTS-0.5B --local-dir "pretrained_model
 
 `ffmpeg` is an optional requirement. It's nice to have, but not critical. If you can't get it, don't worry. It just converts the output wav to mp3 for slightly less bandwidth usage.
 
-## Windows install
+## Windows install:
 
 **Step 1: Get miniconda**
 
@@ -357,7 +357,7 @@ In the [Open-Webui](https://github.com/open-webui/open-webui) admin panel, go to
 ## Known issues
 - Clone voices can be unstable across many segments if unfamiliar to the model. (Switching from a US English to UK English interpretation if it can't decide).
 - (Mostly only an issue with custom clone voices) The segment retry can cause a bit of a traffic jam. If it has to retry a segment on a slow gpu, there may be a break in streaming output with SillyTavern. It *will* eventually continue, but there can be a pause while it tries to catch up. This is especially confusing in SillyTavern since there is no indicator that voice is being generated. It can appear like the request has failed, even though it is still generating.
-- Segments that go off the rails halfway through and then pick up much later are not deteceted and retried.
+- Segments that go off the rails halfway through and then pick up much later are not detected and retried.
 
 Tested with a RTX 3060 12gb GPU on linux with python3.12, and a RTX 4090 GPU on windows with python 3.12. CPU is untested and unsupported.
 
