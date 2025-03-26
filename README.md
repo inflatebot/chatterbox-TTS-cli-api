@@ -95,7 +95,7 @@ git clone https://huggingface.co/SparkAudio/Spark-TTS-0.5B pretrained_models/Spa
 
 ---
 
-#Basic Usage
+# Basic Usage
 
 To start the API server on port 9991:
 ``` sh
