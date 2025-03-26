@@ -371,10 +371,10 @@ def health_check():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OpenAI-compatible TTS Server for SparkTTS')
-    parser.add_argument('--port', type=int, default=5000, help='Port to run the server on')
-    parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to run the server on')
-    parser.add_argument('--device', type=str, default='cuda:0', help='Device to use for model inference')
-    parser.add_argument('--model_dir', type=str, help='Path to the SparkTTS model directory')
+    parser.add_argument('--port', type=int, default=9991, help='Port to run the server on')
+    parser.add_argument('--host', type=str, default='127.0.0.1', help='Host to run the server on')
+    parser.add_argument('--device', type=str, default='cuda:0', help='Device to use for model inference. Using CPU is untested.')
+    parser.add_argument('--model_dir', type=str, default="pretrained_models/Spark-TTS-0.5B/", help='Path to the SparkTTS model directory')
     
     # Voice configuration arguments
     parser.add_argument('--prompt_audio', type=str, help='Path to audio file for voice cloning')
