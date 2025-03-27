@@ -19,6 +19,7 @@ import random
 import json
 import librosa
 import re
+import demoji
 
 # Import your existing TTS code
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -163,6 +164,8 @@ def generate_tts_audio(
     text = re.sub(r'[–]', '-', text)  # En dash to hyphen
     text = re.sub(r'…', '...', text)  # Ellipsis
     text = re.sub(r'[•‣⁃*]', '', text)  # Bullets to none
+
+    text = demoji.replace(text, "")
 
     if not args.allow_allcaps:
         # Convert all-caps words to lowercase (model chokes on all caps)

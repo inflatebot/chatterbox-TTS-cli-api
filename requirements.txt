@@ -20,3 +20,4 @@ torchaudio==2.5.1
 tqdm==4.66.5
 transformers==4.46.2
 tritonclient==2.55.0
+demoji
