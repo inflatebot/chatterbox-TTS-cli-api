@@ -15,8 +15,8 @@ scipy==1.15.2
 semantic_text_splitter==0.25.0
 soundfile==0.12.1
 soxr==0.5.0.post1
-torch==2.5.1
-torchaudio==2.5.1
+torch>=2.5.1
+torchaudio>=2.5.1
 tqdm==4.66.5
 transformers==4.46.2
 tritonclient==2.55.0
