@@ -376,7 +376,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OpenAI-compatible TTS Server for SparkTTS')
     parser.add_argument('--port', type=int, default=9991, help='Port to run the server on')
     parser.add_argument('--host', type=str, default='127.0.0.1', help='Host to run the server on')
-    parser.add_argument('--device', type=str, default='cuda:0', help='Device to use for model inference. Using CPU is untested.')
+    parser.add_argument('--device', type=str, default='default', help='Device to use for model inference. Using CPU is untested.')
     parser.add_argument('--model_dir', type=str, default="pretrained_models/Spark-TTS-0.5B/", help='Path to the SparkTTS model directory')
     
     # Voice configuration arguments
@@ -439,12 +439,28 @@ if __name__ == '__main__':
             logging.info(f"😊 Emotion: {args.emotion}")
         if args.seed:
             logging.info(f"🎲 Fixed seed: {args.seed}")
-    
+
+    inference_device = None
+    if args.device == "default":
+        # Determine appropriate device based on platform and availability
+        if platform.system() == "Darwin":
+            # macOS with MPS support (Apple Silicon)
+            inference_device = torch.device(f"mps:0")
+            logging.info(f"Using MPS device: {inference_device}")
+        elif torch.cuda.is_available():
+            # System with CUDA support
+            inference_device = torch.device(f"cuda:0")
+            logging.info(f"Using CUDA device: {inference_device}")
+        else:
+            # Fall back to CPU
+            inference_device = torch.device("cpu")
+            logging.info("GPU acceleration not available, using CPU")
+
     # Preload the model on startup if model_dir is provided
     if args.model_dir:
         try:
             logging.info(f"Preloading SparkTTS model from {args.model_dir}")
-            _cached_model_instance = SparkTTS(args.model_dir, torch.device(args.device))
+            _cached_model_instance = SparkTTS(args.model_dir, torch.device(inference_device))
             logging.info("Model loaded successfully")
         except Exception as e:
             logging.error(f"Error preloading model: {e}")
