@@ -16,3 +16,5 @@ uv run tts_server.py
 - Manual downloading of the model like in dogarrowtype's server wasn't necessary; the model was downloaded on its own to HuggingFace's model cache. If you're comfortable using huggingface-cli to delete the Chatterbox model should the need arise, you can skip that step here.
 
 - Chatterbox is a much simpler model than SparkTTS. It lacks the fine-grained control, but since the point of both of these projects is use of an API, and the OpenAI schema doesn't allow any ergonomic way of utilizing that control anyway, this should be fine. Essentially, if you have a voice that you're cloning, and don't need all the blinkenlights of Spark, Chatterbox is a great alternative (and, subjectively, I like its results better; hence all the hoopla I just went through.)
+
+- The "CFG Weight" parameter for Chatterbox is mapped to the OpenAI "Speed" parameter, since CFG Weight has the effect of altering speaker pace. It's not a 1:1 though, so don't expect it to reliably make the speaker faster or slower. Yes, this is a hack. I don't have any better ideas.
