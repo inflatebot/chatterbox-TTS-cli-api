@@ -32,7 +32,10 @@ _cached_model_instance = None
 # Global voice parameters set at server startup
 GLOBAL_VOICE_PARAMS = {
     "seed": None,
-    "prompt_speech_path": None
+    "prompt_speech_path": None,
+    "cfg_weight": 0.5,
+    "exaggeration": 0.5,
+    "temperature": 0.8
 }
 
 app = Flask(__name__)
@@ -155,6 +158,7 @@ def generate_tts_audio(
 
     if not args.allow_allcaps:
         # Convert all-caps words to lowercase (model chokes on all caps)
+        # NOTE FROM BOT: Find out if this is the case for Chatterbox
         def lowercase_all_caps(match):
             word = match.group(0)
             if word.isupper() and len(word) > 1:
@@ -184,7 +188,7 @@ def generate_tts_audio(
                     cfg_weight=cfg_weight,
                     temperature=temperature
                 )
-
+            # NOTE FROM BOT: Workaround for a tensor shape error that occurred with Chatterbox. There may be a more "correct" fix, idk, i don't Torch. It works.
             # Convert to numpy and ensure it's 1D
             if isinstance(wav, torch.Tensor):
                 wav = wav.cpu().numpy()
@@ -279,9 +283,6 @@ def trim_trailing_silence_librosa(wav_data, sample_rate=16000, top_db=30, frame_
 def tts():
     try:
         # Parse the request
-        #data = request.json
-
-        # Log the incoming request
         data = request.json
         client_ip = request.remote_addr
 
@@ -297,21 +298,35 @@ def tts():
         model = data.get('model', 'tts-1')  # Ignored but included for compatibility
         input_text = data.get('input')
         response_format = data.get('response_format', 'mp3')
+        speed = data.get('speed', 1.0)  # OpenAI speed parameter (0.25 to 4.0)
         
         if not input_text:
             return jsonify({"error": "Input text is required"}), 400
+        
+        # Validate speed parameter (OpenAI compatible range)
+        if speed < 0.25 or speed > 4.0:
+            return jsonify({"error": "Speed must be between 0.25 and 4.0"}), 400
+        
+        # Map OpenAI speed to Chatterbox cfg_weight
+        # OpenAI speed: 0.25 (very slow) to 4.0 (very fast)
+        # Chatterbox cfg_weight: 0.0 to 1.0 (higher = faster pace according to Resemble)
+        # Linear mapping: speed 0.25->0.0, speed 1.0->0.5, speed 4.0->1.0
+        cfg_weight = min(1.0, max(0.0, (speed - 0.25) / 3.75))
+        
+        logging.info(f"Speed parameter: {speed} -> CFG weight: {cfg_weight:.3f}")
             
         # Create a temp directory for outputs
         temp_dir = tempfile.mkdtemp()
         
-        # Generate the audio using global voice parameters
+        # Generate the audio using global voice parameters and speed mapping
         output_file = generate_tts_audio(
             text=input_text,
             device=inference_device if 'inference_device' in locals() else 'cuda:0',
             prompt_speech_path=GLOBAL_VOICE_PARAMS["prompt_speech_path"],
             seed=GLOBAL_VOICE_PARAMS["seed"],
             segmentation_threshold=400,
-            save_dir=temp_dir
+            save_dir=temp_dir,
+            cfg_weight=cfg_weight  # Use the mapped cfg_weight from speed
         )
         
         # Convert to mp3 if needed
@@ -373,13 +388,30 @@ if __name__ == '__main__':
     parser.add_argument("--seg_threshold", type=int, default=400, help="Character limit for a single segment of text.")
     parser.add_argument("--allow_allcaps", action='store_true', help="Allow words that have 2 or more capital letters to stay capital letters. Normally these are filtered out so that the model can pronounce ALLCAPS words correctly. Useful when the text to be read has many acronyms like API or GUI or EDU.")
     
+    # Chatterbox-specific parameters
+    parser.add_argument("--cfg_weight", type=float, default=0.5, help="Default CFG weight for generation (0.0-1.0). Higher values = faster pace. Can be overridden by API speed parameter.")
+    parser.add_argument("--exaggeration", type=float, default=0.5, help="Default exaggeration level (0.0-1.0)")
+    parser.add_argument("--temperature", type=float, default=0.8, help="Default temperature for generation (0.0-1.0)")
+    
     args = parser.parse_args()
     
-    # Validate voice configuration (removed - Chatterbox doesn't require specific voice config)
+    # Validate Chatterbox parameters
+    if not (0.0 <= args.cfg_weight <= 1.0):
+        logging.error("CFG weight must be between 0.0 and 1.0")
+        sys.exit(1)
+    if not (0.0 <= args.exaggeration <= 1.0):
+        logging.error("Exaggeration must be between 0.0 and 1.0")
+        sys.exit(1)
+    if not (0.0 <= args.temperature <= 1.0):
+        logging.error("Temperature must be between 0.0 and 1.0")
+        sys.exit(1)
     
     # Set global voice parameters  
     GLOBAL_VOICE_PARAMS["seed"] = args.seed
     GLOBAL_VOICE_PARAMS["prompt_speech_path"] = os.path.abspath(args.prompt_audio) if args.prompt_audio else None
+    GLOBAL_VOICE_PARAMS["cfg_weight"] = args.cfg_weight
+    GLOBAL_VOICE_PARAMS["exaggeration"] = args.exaggeration
+    GLOBAL_VOICE_PARAMS["temperature"] = args.temperature
     
     # Log voice configuration
     if args.prompt_audio:
