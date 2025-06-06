@@ -21,10 +21,8 @@ import librosa
 import re
 import demoji
 
-# Import your existing TTS code
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from cli.SparkTTS import SparkTTS
-from sparktts.utils.token_parser import EMO_MAP
+# Import Chatterbox TTS
+from chatterbox.tts import ChatterboxTTS
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -33,13 +31,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 _cached_model_instance = None
 # Global voice parameters set at server startup
 GLOBAL_VOICE_PARAMS = {
-    "gender": None,
-    "pitch": None,
-    "speed": None,
-    "emotion": None,
     "seed": None,
-    "prompt_speech_path": None,
-    "prompt_text": None
+    "prompt_speech_path": None
 }
 
 app = Flask(__name__)
@@ -83,56 +76,49 @@ logging.info(f"FFmpeg is {'available' if ffmpeg_available else 'not available'}"
 # Your existing generate_tts_audio function
 def generate_tts_audio(
     text,
-    model_dir=None,
     device="cuda:0",
     prompt_speech_path=None,
-    prompt_text=None,
-    gender=None,
-    pitch=None,
-    speed=None,
-    emotion=None,
     save_dir="example/results",
     segmentation_threshold=None,
     seed=None,
     model=None,
-    skip_model_init=False
+    skip_model_init=False,
+    exaggeration=0.5,
+    cfg_weight=0.5,
+    temperature=0.8
 ):
     """
-    Generates TTS audio from input text, splitting into segments if necessary.
+    Generates TTS audio from input text using Chatterbox, splitting into segments if necessary.
     Args:
         text (str): Input text for speech synthesis.
-        model_dir (str): Path to the model directory.
         device (str): Device identifier (e.g., "cuda:0" or "cpu").
-        prompt_speech_path (str, optional): Path to prompt audio for cloning.
-        prompt_text (str, optional): Transcript of prompt audio.
-        gender (str, optional): Gender parameter ("male"/"female").
-        pitch (str, optional): Pitch parameter (e.g., "moderate").
-        speed (str, optional): Speed parameter (e.g., "moderate").
-        emotion (str, optional): Emotion tag (e.g., "HAPPY", "SAD", "ANGRY").
+        prompt_speech_path (str, optional): Path to prompt audio for voice cloning.
         save_dir (str): Directory where generated audio will be saved.
-        segmentation_threshold (int): Maximum number of words per segment.
+        segmentation_threshold (int): Maximum number of characters per segment.
         seed (int, optional): Seed value for deterministic voice generation.
+        exaggeration (float): Exaggeration level for generation (0.0-1.0).
+        cfg_weight (float): CFG weight for generation (0.0-1.0).
+        temperature (float): Temperature for generation (0.0-1.0).
     Returns:
         str: The unique file path where the generated audio is saved.
     """
     # ============================== OPTIONS REFERENCE ==============================
-    # ✔ Gender options: "male", "female"
-    # ✔ Pitch options: "very_low", "low", "moderate", "high", "very_high"
-    # ✔ Speed options: same as pitch
-    # ✔ Emotion options: list from token_parser.py EMO_MAP keys
-    # ✔ Seed: any integer (e.g., 1337, 42, 123456) = same voice (mostly)
+    # ✔ Audio prompt: path to reference audio file for voice cloning
+    # ✔ Exaggeration: 0.0-1.0 (default: 0.5)
+    # ✔ CFG Weight: 0.0-1.0 (default: 0.5)  
+    # ✔ Temperature: 0.0-1.0 (default: 0.8)
+    # ✔ Seed: any integer for deterministic generation
     # ==============================================================================
-
-    if model_dir is None:
-        model_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "pretrained_models", "Spark-TTS-0.5B"))
     
     global _cached_model_instance
     if not skip_model_init or model is None:
         if _cached_model_instance is None:
-            logging.info("Initializing TTS model...")
-            if not prompt_speech_path:
-                logging.info(f"Using Gender: {gender or 'default'}, Pitch: {pitch or 'default'}, Speed: {speed or 'default'}, Emotion: {emotion or 'none'}, Seed: {seed or 'random'}")
-            model = SparkTTS(model_dir, torch.device(device))
+            logging.info("Initializing Chatterbox TTS model...")
+            if prompt_speech_path:
+                logging.info(f"Using voice cloning with prompt: {prompt_speech_path}")
+            else:
+                logging.info("Using default Chatterbox voice")
+            model = ChatterboxTTS.from_pretrained(device=device)
             _cached_model_instance = model
         else:
             model = _cached_model_instance
@@ -191,22 +177,34 @@ def generate_tts_audio(
         retry_count = 0
         while retry_count < MAX_RETRY_ATTEMPTS:
             with torch.no_grad():
-                wav = model.inference(
+                wav = model.generate(
                     seg,
-                    prompt_speech_path,
-                    prompt_text=prompt_text,
-                    gender=gender,
-                    pitch=pitch,
-                    speed=speed,
-                    seed=seed,
-                    emotion=emotion
+                    audio_prompt_path=prompt_speech_path,
+                    exaggeration=exaggeration,
+                    cfg_weight=cfg_weight,
+                    temperature=temperature
                 )
 
+            # Convert to numpy and ensure it's 1D
+            if isinstance(wav, torch.Tensor):
+                wav = wav.cpu().numpy()
+            
+            # Ensure wav is 1D
+            if wav.ndim > 1:
+                wav = wav.squeeze()
+            if wav.ndim > 1:
+                wav = wav[0]  # Take first channel if still multi-dimensional
+            
             # Get both the trimmed audio and the amount of silence trimmed
-            trimmed_wav, seconds_trimmed = trim_trailing_silence_librosa(wav, sample_rate=16000)
+            trimmed_wav, seconds_trimmed = trim_trailing_silence_librosa(wav, sample_rate=model.sr)
 
             # If silence is acceptable, or we've tried too many times, use this result
             if seconds_trimmed < MAX_SILENCE_THRESHOLD or retry_count == MAX_RETRY_ATTEMPTS - 1:
+                # Ensure trimmed_wav is 1D
+                if trimmed_wav.ndim > 1:
+                    trimmed_wav = trimmed_wav.squeeze()
+                if trimmed_wav.ndim > 1:
+                    trimmed_wav = trimmed_wav[0]
                 wavs.append(trimmed_wav)
                 break
             else:
@@ -221,13 +219,13 @@ def generate_tts_audio(
                     torch.cuda.manual_seed_all(seed)
 
         delay_time = random.uniform(0.30, 0.5)  # Random delay between 300-500ms
-        silence_samples = int(16000 * delay_time)  # 16000 is sample rate
-        silence = np.zeros(silence_samples)
+        silence_samples = int(model.sr * delay_time)  # Use model's sample rate
+        silence = np.zeros(silence_samples, dtype=np.float32)  # Ensure 1D array
         wavs.append(silence)
         logging.info(f"Processed one segment{' after ' + str(retry_count) + ' retries' if retry_count > 0 else ''}.")
     
     final_wav = np.concatenate(wavs, axis=0)
-    sf.write(save_path, final_wav, samplerate=16000)
+    sf.write(save_path, final_wav, samplerate=model.sr)
     logging.info(f"Audio saved at: {save_path}")
     
     return save_path
@@ -309,13 +307,9 @@ def tts():
         # Generate the audio using global voice parameters
         output_file = generate_tts_audio(
             text=input_text,
-            gender=GLOBAL_VOICE_PARAMS["gender"],
-            pitch=GLOBAL_VOICE_PARAMS["pitch"],
-            speed=GLOBAL_VOICE_PARAMS["speed"],
-            emotion=GLOBAL_VOICE_PARAMS["emotion"],
-            seed=GLOBAL_VOICE_PARAMS["seed"],
+            device=inference_device if 'inference_device' in locals() else 'cuda:0',
             prompt_speech_path=GLOBAL_VOICE_PARAMS["prompt_speech_path"],
-            prompt_text=GLOBAL_VOICE_PARAMS["prompt_text"],
+            seed=GLOBAL_VOICE_PARAMS["seed"],
             segmentation_threshold=400,
             save_dir=temp_dir
         )
@@ -355,58 +349,37 @@ def list_models():
         ]
     })
 
-# Health check endpoint
 @app.route('/health', methods=['GET'])
 def health_check():
     voice_info = {
-        "gender": GLOBAL_VOICE_PARAMS["gender"],
-        "pitch": GLOBAL_VOICE_PARAMS["pitch"],
-        "speed": GLOBAL_VOICE_PARAMS["speed"],
-        "emotion": GLOBAL_VOICE_PARAMS["emotion"],
         "using_prompt": GLOBAL_VOICE_PARAMS["prompt_speech_path"] is not None
     }
     
     return jsonify({
         "status": "ok", 
-        "message": "SparkTTS server is running", 
+        "message": "Chatterbox TTS server is running", 
         "voice_config": voice_info
     }), 200
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='OpenAI-compatible TTS Server for SparkTTS')
+    parser = argparse.ArgumentParser(description='OpenAI-compatible TTS Server for Chatterbox')
     parser.add_argument('--port', type=int, default=9991, help='Port to run the server on')
     parser.add_argument('--host', type=str, default='127.0.0.1', help='Host to run the server on')
     parser.add_argument('--device', type=str, default='default', help='Device to use for model inference. Using CPU is untested.')
-    parser.add_argument('--model_dir', type=str, default="pretrained_models/Spark-TTS-0.5B/", help='Path to the SparkTTS model directory')
     
     # Voice configuration arguments
     parser.add_argument('--prompt_audio', type=str, help='Path to audio file for voice cloning')
-    parser.add_argument('--prompt_text', type=str, help='Transcript text for the prompt audio (optional)')
-    parser.add_argument('--gender', type=str, choices=["male", "female"], help='Gender parameter')
-    parser.add_argument('--pitch', type=str, choices=["very_low", "low", "moderate", "high", "very_high"], 
-                        default="moderate", help='Pitch parameter')
-    parser.add_argument('--speed', type=str, choices=["very_low", "low", "moderate", "high", "very_high"], 
-                        default="moderate", help='Speed parameter')
-    parser.add_argument('--emotion', type=str, choices=list(EMO_MAP.keys()), help='Emotion tag')
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--seg_threshold", type=int, default=400, help="Character limit for a single segment of text.")
     parser.add_argument("--allow_allcaps", action='store_true', help="Allow words that have 2 or more capital letters to stay capital letters. Normally these are filtered out so that the model can pronounce ALLCAPS words correctly. Useful when the text to be read has many acronyms like API or GUI or EDU.")
     
     args = parser.parse_args()
     
-    # Validate voice configuration
-    #if not args.prompt_audio and not args.gender:
-    #    logging.error("❌ Error: You must provide either --gender (male/female) or --prompt_audio for voice cloning.")
-    #    sys.exit(1)
+    # Validate voice configuration (removed - Chatterbox doesn't require specific voice config)
     
-    # Set global voice parameters
-    GLOBAL_VOICE_PARAMS["gender"] = args.gender if not args.prompt_audio else None
-    GLOBAL_VOICE_PARAMS["pitch"] = args.pitch if not args.prompt_audio else None
-    GLOBAL_VOICE_PARAMS["speed"] = args.speed if not args.prompt_audio else None
-    GLOBAL_VOICE_PARAMS["emotion"] = args.emotion
+    # Set global voice parameters  
     GLOBAL_VOICE_PARAMS["seed"] = args.seed
     GLOBAL_VOICE_PARAMS["prompt_speech_path"] = os.path.abspath(args.prompt_audio) if args.prompt_audio else None
-    GLOBAL_VOICE_PARAMS["prompt_text"] = args.prompt_text
     
     # Log voice configuration
     if args.prompt_audio:
@@ -426,45 +399,33 @@ if __name__ == '__main__':
             logging.info(f"📏 Prompt duration: {info.duration:.2f} seconds | Sample Rate: {info.samplerate}")
         except Exception as e:
             logging.warning(f"⚠️ Could not read prompt audio info: {e}")
-
-        # Override pitch/speed/gender
-        if args.gender or args.pitch or args.speed:
-            print("[!] Warning: Voice cloning mode detected — ignoring gender/pitch/speed settings.")
-        args.gender = None
-        args.pitch = None
-        args.speed = None
     else:
-        logging.info(f"🔊 Using configured voice: Gender={args.gender}, Pitch={args.pitch}, Speed={args.speed}")
-        if args.emotion:
-            logging.info(f"😊 Emotion: {args.emotion}")
+        logging.info("🔊 Using default Chatterbox voice")
         if args.seed:
             logging.info(f"🎲 Fixed seed: {args.seed}")
 
     inference_device = None
     if args.device == "default":
-        # Determine appropriate device based on platform and availability
-        if platform.system() == "Darwin":
-            # macOS with MPS support (Apple Silicon)
-            inference_device = torch.device(f"mps:0")
-            logging.info(f"Using MPS device: {inference_device}")
-        elif torch.cuda.is_available():
-            # System with CUDA support
-            inference_device = torch.device(f"cuda:0")
-            logging.info(f"Using CUDA device: {inference_device}")
+        # Automatically detect the best available device
+        if torch.cuda.is_available():
+            inference_device = "cuda"
+        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            inference_device = "mps"
         else:
-            # Fall back to CPU
-            inference_device = torch.device("cpu")
-            logging.info("GPU acceleration not available, using CPU")
-
-    # Preload the model on startup if model_dir is provided
-    if args.model_dir:
-        try:
-            logging.info(f"Preloading SparkTTS model from {args.model_dir}")
-            _cached_model_instance = SparkTTS(args.model_dir, torch.device(inference_device))
-            logging.info("Model loaded successfully")
-        except Exception as e:
-            logging.error(f"Error preloading model: {e}")
-            sys.exit(1)
+            inference_device = "cpu"
+    else:
+        inference_device = args.device
+    
+    logging.info(f"Using device: {inference_device}")
+    
+    # Preload the Chatterbox model on startup
+    try:
+        logging.info("Preloading Chatterbox TTS model...")
+        _cached_model_instance = ChatterboxTTS.from_pretrained(device=inference_device)
+        logging.info("Chatterbox model loaded successfully")
+    except Exception as e:
+        logging.error(f"Failed to preload Chatterbox model: {e}")
+        sys.exit(1)
             
     logging.info(f"Starting OpenAI-compatible TTS server on http://{args.host}:{args.port}/v1/audio/speech")
     app.run(host=args.host, port=args.port, debug=False)
